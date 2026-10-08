@@ -6,3 +6,7 @@ def check_email(email):
 
 def extract_numbers(text):
     return re.findall(r"\d+", text)
+
+def check_phone(phone):
+    pattern = r"^\+7\d{10}$"
+    return bool(re.fullmatch(pattern, phone))

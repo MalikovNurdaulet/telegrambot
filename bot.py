@@ -1,8 +1,8 @@
 
 import telebot
 from config import TOKEN
-from functions import get_courses, course_info, total_hours, format_user
-from validators import check_email, extract_numbers
+from functions import get_courses, course_info, total_hours, format_user, get_contacts, get_tips, courses_list, calculate_average, sort_students_asc, sort_students_desc
+from validators import check_email, extract_numbers, check_phone
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -14,12 +14,81 @@ def start(message):
         "Я учебный бот.\n\n"
         "Доступные команды:\n"
         "/courses — список курсов\n"
+        "/contacts — контакты\n"
+        "/stats — статистика пользователей\n"
+        "/hours — длительность курсов\n"
+        "/schedule — расписание\n"
+        "/countdown — обратный отсчёт\n"
+        "/tip — полезный совет\n"
         "/info Python — информация о курсе\n"
         "/me — информация о пользователе\n"
         "/email — проверка email\n"
+        "/average — посчитать среднее\n"
+        "/phone — проверка номера\n"
+        "/sort_asc — сортировка студентов по возрастанию\n"
+        "/sort_desc — сортировка студентов по убыванию\n"
         "/numbers — поиск чисел"
     )
 
+
+@bot.message_handler(commands=["sort_asc"])
+def sort_asc(message):
+    students = sort_students_asc()
+    text = "Студенты по возрастанию балла:\n"
+    for student in students:
+        text += f"{student['name']} — {student['score']}\n"
+    bot.send_message(message.chat.id, text)
+
+
+@bot.message_handler(commands=["sort_desc"])
+def sort_desc(message):
+    students = sort_students_desc()
+    text = "Студенты по убыванию балла:\n"
+    for student in students:
+        text += f"{student['name']} — {student['score']}\n"
+    bot.send_message(message.chat.id, text)
+
+@bot.message_handler(commands=["phone"])
+def phone(message):
+    try:
+        phone_number = message.text.split(maxsplit=1)[1].strip()
+        if check_phone(phone_number):
+            result = "Номер телефона корректный."
+        else:
+            result = "Некорректный номер телефона."
+    except IndexError:
+        result = "Используйте команду:\n/phone +77001234567"
+
+    bot.send_message(message.chat.id, result)
+
+
+@bot.message_handler(commands=["average"])
+def average(message):
+    try:
+        parts = message.text.split()[1:]
+        numbers = [float(number) for number in parts]
+        result = calculate_average(*numbers)
+        bot.send_message(
+            message.chat.id,
+            f"Среднее значение: {result}"
+        )
+    except ValueError:
+        bot.send_message(
+            message.chat.id,
+            "Ошибка: вводите только числа."
+        )
+
+@bot.message_handler(commands=["courses"])
+def show_courses(message):
+    data = courses_list()
+    text = "Курсы:\n" + "\n".join(data)
+    text += f"\nВсего: {len(data)}, первый: {data[0]}"
+    bot.send_message(message.chat.id, text)
+
+@bot.message_handler(commands=["contacts"])
+def show_contacts(message):
+    center, phone = get_contacts()
+    bot.send_message(message.chat.id, f"{center}\nТелефон: {phone}")
 
 @bot.message_handler(commands=["courses"])
 def courses(message):
